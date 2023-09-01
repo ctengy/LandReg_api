@@ -1,7 +1,5 @@
 import requests
-import base64
-import json
-from logics.exceptions import *
+from exceptions import *
 
 class Get_token(object):
 
@@ -9,23 +7,19 @@ class Get_token(object):
     Token = ""
     ClientID = ''
     SecretCode = ''
-
-
-    def __init__(self,ClientID = '',SecretCode = '') -> None:
+    
+    def __init__(self,ClientID = None,SecretCode = None,TokenUrl = None) -> None:
         self.ClientID = ClientID
         self.SecretCode = SecretCode
 
-    def request_token(self):
+        if TokenUrl is None: 
+            TokenUrl = self.TokenUrl
+
+    def request_token(self) -> str:
         try:
             if all((self.ClientID,self.SecretCode)):
-                credentials = f"{self.ClientID}:{self.SecretCode}"
-                cred_bytes = credentials.encode('ascii')
-                cred_base64 = base64.b64encode(cred_bytes).decode('utf-8')
-                headers = {
-                    "Authorization": f"Basic {cred_base64}",
-                    "Content-Type": "application/json; charset=utf-8"
-                }
-                response = requests.get(self.TokenUrl, headers=headers)
+                response = requests.get(self.TokenUrl, auth=(f'{self.ClientID}', f'{self.SecretCode}'))
+                print(response.status_code)
                 res_obj = response.json()
                 self.Token = res_obj['access_token']
 
@@ -35,5 +29,11 @@ class Get_token(object):
             
         except GetTokenFialed as e:
             raise GetTokenFialed('request token issue')
+        
+        except requests.exceptions.JSONDecodeError as e:
+            raise GetTokenFialed(f'解析錯誤\n狀態碼:{response.status_code}\n回傳:{response.text}')
 
 
+if __name__ == "__main__":
+    a = Get_token(ClientID='user',SecretCode='pass',TokenUrl= 'https://authenticationtest.com/HTTPAuth/')
+    a.request_token()
