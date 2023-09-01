@@ -1,14 +1,14 @@
 import requests
 
 # 自定義異常
-from logics.exceptions import InvalidInputException, RequestFailedException, FormatFailedException
+from logics.Exceptions import InvalidInputException, RequestFailedException, FormatFailedException
 
 class QueryObject(object):#搜尋的父類別，定義了每次搜尋的流程:檢查token及參數、發送request、提取回傳資料 
 
     url = None
-    def __init__(self,token='',**kwargs) -> None:
+    def __init__(self,token= None,**kwargs) -> None:
         self.token = token
-        if all(kwargs.values()) and token:#檢查查詢參數及token並建構requst header及body
+        if all(kwargs.values()):#檢查查詢參數及token並建構requst header及body
             self.request_body = [kwargs]
             self.request_headers = {
                         "Content-Type":"text/plain",
@@ -186,7 +186,7 @@ class LandOwnershipQuery(QueryObject):#土地所有權部搜尋的子類別，�
         else:
             raise FormatFailedException(f'查詢無結果{raw_data}')
 
-class LandOwnershipQuery(QueryObject):#土地他項權利部搜尋的子類別，定義要求api的網址，rewrite format_data方法    
+class LandOtherRights(QueryObject):#土地他項權利部搜尋的子類別，定義要求api的網址，rewrite format_data方法    
     url = 'https://api.land.moi.gov.tw/cp/api/LandOtherRights'
      #他項權利部查詢
     def __init__(self,token='', UNIT='', SEC='', NO='',OFFSET = 1,LIMIT = 1) -> None:

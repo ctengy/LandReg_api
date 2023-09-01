@@ -11,4 +11,6 @@ class FormatFailedException(Exception):
 
 class GetTokenFialed(Exception):
     pass
+class UnFormatedException(Exception):
+    pass
 

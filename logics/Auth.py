@@ -2,7 +2,7 @@ import sys
 sys.path.append(r'.')#將上級目錄加入path
 
 import requests
-from logics.exceptions import *
+from logics.Exceptions import *
 
 class Get_token(object):
 
@@ -17,6 +17,8 @@ class Get_token(object):
 
         if TokenUrl is None: 
             TokenUrl = self.TokenUrl
+        
+        self.request_token()
 
     def request_token(self) -> str:
         try:
@@ -31,12 +33,19 @@ class Get_token(object):
                 raise GetTokenFialed("ID and SecretCode is EMPTY")
             
         except GetTokenFialed as e:
-            raise GetTokenFialed('request token issue')
+            print('request token issue')
+            return None
         
         except requests.exceptions.JSONDecodeError as e:
-            raise GetTokenFialed(f'解析錯誤\n狀態碼:{response.status_code}\n回傳:{response.text}')
+            print (f'解析錯誤\n狀態碼:{response.status_code}\n回傳:{response.text}')
+            return None
 
 
 if __name__ == "__main__":
-    a = Get_token(ClientID='user',SecretCode='pass',TokenUrl= 'https://authenticationtest.com/HTTPAuth/')
-    a.request_token()
+    def case1():
+        a = Get_token(ClientID='user',SecretCode='pass',TokenUrl= 'https://authenticationtest.com/HTTPAuth/')
+        a.request_token()
+    def case2():
+        a = Get_token()
+    
+    # print(case2())
