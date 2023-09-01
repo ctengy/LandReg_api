@@ -6,10 +6,9 @@ from PySide6.QtWidgets import (QApplication, QFrame, QLabel, QMainWindow,
     QTextBrowser, QTextEdit, QVBoxLayout, QWidget,QTreeWidgetItem)
 from PySide6.QtCore import Qt
 
-import requests
 #引入ui檔案
 sys.path.append(r'.')#將上級目錄加入path
-from gui.Ui_4 import Ui_MainWindow
+from gui.Ui_5 import Ui_MainWindow
 
 from logics.requestapi import *
 from logics.Auth import *
@@ -24,9 +23,10 @@ class MyWindow(QMainWindow, Ui_MainWindow):
     
     def bind(self):
         #綁定函數
-        self.pushButton_OK.clicked.connect(self.ask_LandDescription)
+        self.pushButton_QLD.clicked.connect(self.Ask_LandDescription)
+        self.pushButton_Clear.clicked.connect(self.Clear_Input)
 
-    def ask_LandDescription(self):#fix here
+    def Ask_LandDescription(self):#fix here
         #取得GUI輸入
         U = self.textEdit_UNIT.toPlainText()#事務所代碼
         S = self.textEdit_SEC.toPlainText()#段代碼
@@ -69,7 +69,10 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         else:
             print(received_data)
 
-
+    def Clear_Input(self):
+        self.textEdit_UNIT.clear()
+        self.textEdit_SEC.clear()
+        self.textEdit_NO.clear()
 
 if __name__ == "__main__":
     app = QApplication([])

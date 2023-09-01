@@ -1,5 +1,8 @@
+import sys 
+sys.path.append(r'.')#將上級目錄加入path
+
 import requests
-from exceptions import *
+from logics.exceptions import *
 
 class Get_token(object):
 
