@@ -2,6 +2,6 @@ from logics.Basic import *
 
 if __name__ == "__main__":
     app = QApplication([])
-    window = MyWindow()
+    window = LogInWindow()
     window.show()
     app.exec()       

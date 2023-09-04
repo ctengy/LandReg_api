@@ -1,7 +1,7 @@
 import requests
 
 # 自定義異常
-from Exceptions import InvalidInputException, RequestFailedException, FormatFailedException
+from logics.Exceptions import InvalidInputException, RequestFailedException, FormatFailedException
 
 class QueryObject(object):#搜尋的父類別，定義了每次搜尋的流程:檢查token及參數、發送request、提取回傳資料 
 
