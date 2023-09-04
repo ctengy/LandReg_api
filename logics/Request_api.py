@@ -37,10 +37,17 @@ class QueryObject(object):#搜尋的父類別，定義了每次搜尋的流程:�
                 url = self.url
                 response = requests.post(url, json=request_body, headers=request_headers)
                 response.raise_for_status()
+                if response.status_code == 200:
+                    response_data = response.json()
+                    raw_data = response_data
+                    return raw_data
+                
+                elif response.status_code == 401:
+                    raise RequestFailedException(f'身分認證失敗:{response.status_code}')
+                
+                else:
+                    raise RequestFailedException(f'失敗狀態碼:{response.status_code}')
 
-                response_data = response.json()
-                raw_data = response_data
-                return raw_data
         
             except requests.exceptions.RequestException as e:
                 raise RequestFailedException(f"Request failed with error: {e}")
@@ -120,11 +127,18 @@ class LandDescriptionQuery(QueryObject):#土地標示部搜尋的子類別，定
         else:
             raise FormatFailedException(f'查詢無結果{raw_data}')
 
-class LandOwnershipQuery(QueryObject):#土地所有權部搜尋的子類別，定義要求api的網址，rewrite format_data方法
-    url = 'https://api.land.moi.gov.tw/sandbox/api/LandOwnership/1.0/QueryByLimit'
+class LandOwnershipQuery(QueryObject):#土地所有權部搜尋的子類別，定義要求api的網址
+    
+    
     #所有權部查詢
-    def __init__(self, token='',UNIT='', SEC='', NO='',OFFSET = 1,LIMIT = 1) -> None:
-        super().__init__(token=token,UNIT=UNIT, SEC=SEC, NO=NO,OFFSET = OFFSET,LIMIT = LIMIT)
+    def __init__(self, token='',UNIT='', SEC='', NO='',OFFSET = '1',LIMIT = '2', RNO = '0002') -> None:#fix here
+        if RNO:#如果RNO有值，優先以RNO查找
+            self.url = 'https://api.land.moi.gov.tw/sandbox/api/LandOwnership/1.0/QueryByRegisterNo'
+            super().__init__(token=token,UNIT=UNIT, SEC=SEC, NO=NO,RNO = RNO)
+        else:
+            self.url = 'https://api.land.moi.gov.tw/sandbox/api/LandOwnership/1.0/QueryByLimit'
+            super().__init__(token=token,UNIT=UNIT, SEC=SEC, NO=NO,OFFSET = OFFSET,LIMIT = LIMIT)
+
 
     
     def format_data(self, raw_data):#fix here
@@ -153,38 +167,61 @@ class LandOwnershipQuery(QueryObject):#土地所有權部搜尋的子類別，�
             "PONUMERATOR": "歷次取得權利範圍持分分子",
             "NUMBER": "其他登記事項序號",
             "CATEGORY": "其他登記事項代碼(※代碼30)",
-            "CONTENT": "其他登記事項內容"
+            "CONTENT": "其他登記事項內容",
+            'OWNER' : '權利人',
+            'LTPRICE': '前次移轉現值',
+            'OTHERRIGHTS' : '相關他項權利部',
+            'OTHERREG' : '其他登記事項'
         }
-        pass
-        
-        if raw_data['QUANTITY'] != 0:
+
+        if raw_data['QUANTITY'] != False:#fix here 因為免費測試資料這格是0，為了測試先去除
             formatted_OWNERREG = {}  # 存储格式化后的数据
-            formatted_OTHERREG = {}
+
+
             try:
                 if raw_data and isinstance(raw_data, dict):
                     response = raw_data.get("RESPONSE", "無回應")
-       
-                    result_dic = response[0]["LANDOWNERSHIP"]
 
-                    for result in result_dic:
-                        #當OTHERREG有值時處理OTHERREG
-                        if result =='OTHERREG' and any(result_dic['OTHERREG']) :
-                            OTHERREG_data = result_dic['OTHERREG'][0]#list中的dic值
-                            for otherreg in OTHERREG_data:
-                                formatted_OTHERREG[field_mapping.get(otherreg,otherreg)] = OTHERREG_data[otherreg]
-                            formatted_OWNERREG['其他登記事項'] = formatted_OTHERREG
-                        else:    
-                            formatted_OWNERREG[field_mapping.get(result,result)] = result_dic[result]#轉換成中文
+                    result_dic_ownership = response[0]['LANDOWNERSHIP'][0]#取出回傳結果字典
+                    print(result_dic_ownership)
+                    
+                    for title, val in result_dic_ownership.items():
+                        translate_title = field_mapping.get(title,title)
 
-                    formatted_data = {'土地所有權部':formatted_OWNERREG}
+                        if isinstance(val,str):
+                            formatted_OWNERREG[translate_title] = val
 
-                    return formatted_data
+                        elif title == 'OWNER':
+                             translateted_OWNER_dic = {}
+                             result_dic_OWNER = result_dic_ownership[title]
+                             
+                             for OWNER_title, OWNER_val in result_dic_OWNER.items():
+                                 
+                                 translate_OWNER_title = field_mapping.get(OWNER_title,OWNER_title)
+                                 translateted_OWNER_dic[translate_OWNER_title] = OWNER_val
 
+                                 formatted_OWNERREG[translate_title] = translateted_OWNER_dic
+                        
+                        elif title in ('LTPRICE','OTHERRIGHTS','OTHERREG') and any(result_dic_ownership[title]) :
+                            translateted_OTH_dic = {}
+                            ressult_dic_OTH =  result_dic_ownership[title][0]
+
+                            for OTH_title ,OTH_val in ressult_dic_OTH.items():
+                                
+                                translateted_OTH_title = field_mapping.get(OTH_title,OTH_title)
+                                translateted_OTH_dic[translateted_OTH_title] = OTH_val
+
+                                formatted_OWNERREG[translate_title] = translateted_OTH_dic   
+
+                                
+                    
+                    return {'土地所有權部':formatted_OWNERREG}
 
             except TypeError as e:
                 raise FormatFailedException(f'{raw_data} ,\n,{e}')
         else:
             raise FormatFailedException(f'查詢無結果{raw_data}')
+        
 
 class LandOtherRights(QueryObject):#土地他項權利部搜尋的子類別，定義要求api的網址，rewrite format_data方法    
     url = 'https://api.land.moi.gov.tw/cp/api/LandOtherRights'
