@@ -50,35 +50,36 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         token = auth.request_token()#取得Token
         query = LandDescriptionQuery(token=token,UNIT=U,SEC=S,NO=N)
 
-        Received_Data = query.run()#送回{'土地標示部':formatted_LANDREG} 
-       
-            
-            
+        Received_Data = query.run()#送回{'土地標示部':formatted_LANDREG}     
+                       
         if isinstance(Received_Data, dict):  # 檢查回傳資料是否正確
-            self.label_return.setText('查詢成功')
-            items = []  # 用來存放 QTreeWidgetItem 的列表
-            for key, values in Received_Data.items():
-                # 創建一個新的 QTreeWidgetItem，包含主字典的鍵
-                item = QTreeWidgetItem([key])
-                for value in values:
-                    if value == '其他登記事項':
-                        # 如果子字典的鍵是 '其他登記事項'，創建第一層子節點
-                        child1 = QTreeWidgetItem([value])
-                        item.addChild(child1)
-                        for oth_key, oth_value in values[value].items():
-                            # 遍歷 '其他登記事項' 下的子字典，創建第二層子節點
-                            child2 = QTreeWidgetItem([oth_key, oth_value])
-                            child1.addChild(child2)
-                        item.addChild(child1)  # 加入第一層子節點到主節點
-                    else:
-                        ext = values[value]
-                        # 創建一個包含值和擴展的 QTreeWidgetItem
-                        child = QTreeWidgetItem([value, ext])
-                        item.addChild(child)
-                items.append(item)  # 加入主節點到項目列表
+            try:
+                self.label_return.setText('查詢成功')
+                items = []  # 用來存放 QTreeWidgetItem 的列表
+                for key, values in Received_Data.items():
+                    # 創建一個新的 QTreeWidgetItem，包含主字典的鍵
+                    item = QTreeWidgetItem([key])
+                    for value in values:
+                        if value == '其他登記事項':
+                            # 如果子字典的鍵是 '其他登記事項'，創建第一層子節點
+                            child1 = QTreeWidgetItem([value])
+                            item.addChild(child1)
+                            for oth_key, oth_value in values[value].items():
+                                # 遍歷 '其他登記事項' 下的子字典，創建第二層子節點
+                                child2 = QTreeWidgetItem([oth_key, oth_value])
+                                child1.addChild(child2)
+                            item.addChild(child1)  # 加入第一層子節點到主節點
+                        else:
+                            ext = values[value]
+                            # 創建一個包含值和擴展的 QTreeWidgetItem
+                            child = QTreeWidgetItem([value, ext])
+                            item.addChild(child)
+                    items.append(item)  # 加入主節點到項目列表
 
-            # 將項目列表插入到 QTreeWidget 的頂層
-            self.treeWidget.insertTopLevelItems(0, items)
+                # 將項目列表插入到 QTreeWidget 的頂層
+                self.treeWidget.insertTopLevelItems(0, items)
+            except:
+                self.label_return.setText('Insert Data Fail')
 
         else:
             self.label_return.setText(Received_Data)
@@ -99,32 +100,36 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         print(Received_Data)
 
         if isinstance(Received_Data, dict):  # 檢查回傳資料是否正確
-            items = []  # 用來存放 QTreeWidgetItem 的列表
-            for key, values in Received_Data.items():
-                # 創建一個新的 QTreeWidgetItem，包含主字典的鍵
-                item = QTreeWidgetItem([key])
-                for value in values:
-                    if value in ('權利人','前次移轉現值','相關他項權利部','其他登記事項'):
-                        # 如果子字典的鍵是 '其他登記事項'，創建第一層子節點
-                        child1 = QTreeWidgetItem([value])
-                        item.addChild(child1)
-                        for oth_key, oth_value in values[value].items():
-                            # 遍歷 '其他登記事項' 下的子字典，創建第二層子節點
-                            child2 = QTreeWidgetItem([oth_key, oth_value])
-                            child1.addChild(child2)
-                        item.addChild(child1)  # 加入第一層子節點到主節點
-                    elif value:
-                        ext = values[value]
-                        # 創建一個包含值和擴展的 QTreeWidgetItem
-                        child = QTreeWidgetItem([value, ext])
-                        item.addChild(child)
-                items.append(item)  # 加入主節點到項目列表
+            try:
+                items = []  # 用來存放 QTreeWidgetItem 的列表
+                for key, values in Received_Data.items():
+                    # 創建一個新的 QTreeWidgetItem，包含主字典的鍵
+                    item = QTreeWidgetItem([key])
+                    for value in values:
+                        if value in ('權利人','前次移轉現值','相關他項權利部','其他登記事項'):
+                            # 如果子字典的鍵是 '其他登記事項'，創建第一層子節點
+                            child1 = QTreeWidgetItem([value])
+                            item.addChild(child1)
+                            for oth_key, oth_value in values[value].items():
+                                # 遍歷 '其他登記事項' 下的子字典，創建第二層子節點
+                                child2 = QTreeWidgetItem([oth_key, oth_value])
+                                child1.addChild(child2)
+                            item.addChild(child1)  # 加入第一層子節點到主節點
+                        elif value:
+                            ext = values[value]
+                            # 創建一個包含值和擴展的 QTreeWidgetItem
+                            child = QTreeWidgetItem([value, ext])
+                            item.addChild(child)
+                    items.append(item)  # 加入主節點到項目列表
 
-            # 將項目列表插入到 QTreeWidget 的頂層
-            self.treeWidget.insertTopLevelItems(0, items)
+                # 將項目列表插入到 QTreeWidget 的頂層
+                self.treeWidget.insertTopLevelItems(0, items)
+            except:
+                self.label_return.setText('Insert Data Fail')
 
         else:
-            raise UnFormatedException('Data UnFormated!')
+            self.label_return.setText(Received_Data)
+
 
     def Ask_LandOtherRights(self):#fix here 待寫insert logic
         #取得GUI輸入
@@ -142,48 +147,50 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         
         
         if isinstance(Received_Data, dict):  # 檢查回傳資料是否正確
-            items = []  # 用來存放 QTreeWidgetItem 的列表
-            for key, values in Received_Data.items():
-                # 創建一個新的 QTreeWidgetItem，包含主字典的鍵
-                item = QTreeWidgetItem([key])
-                for value in values:
-                    if value in ('標的登記次序','權利人','他項權利檔','其他登記事項'):
-                        # 如果子字典的鍵是 '其他登記事項'，創建第一層子節點
-                        child1 = QTreeWidgetItem([value])
-                        item.addChild(child1)
-                        for oth_key, oth_value in values[value].items():
-                            # 遍歷 '其他登記事項' 下的子字典，創建第二層子節點
-                            child2 = QTreeWidgetItem([oth_key, oth_value])
-                            child1.addChild(child2)
-                        item.addChild(child1)  # 加入第一層子節點到主節點
+            try:
+                items = []  # 用來存放 QTreeWidgetItem 的列表
+                for key, values in Received_Data.items():
+                    # 創建一個新的 QTreeWidgetItem，包含主字典的鍵
+                    item = QTreeWidgetItem([key])
+                    for value in values:
+                        if value in ('標的登記次序','權利人','他項權利檔','其他登記事項'):
+                            # 如果子字典的鍵是 '其他登記事項'，創建第一層子節點
+                            child1 = QTreeWidgetItem([value])
+                            item.addChild(child1)
+                            for oth_key, oth_value in values[value].items():
+                                # 遍歷 '其他登記事項' 下的子字典，創建第二層子節點
+                                child2 = QTreeWidgetItem([oth_key, oth_value])
+                                child1.addChild(child2)
+                            item.addChild(child1)  # 加入第一層子節點到主節點
 
-                    elif value in ('共同擔保地／建號'):
-                        child1 = QTreeWidgetItem([value])
-                        item.addChild(child1)
-                        for oth_key, oth_value in values[value].items():
-                            # 遍歷 '其他登記事項' 下的子字典，創建第二層子節點
-                            child2 = QTreeWidgetItem([oth_key])
-                            child1.addChild(child2)
-                            for oth_key2, oth_val2 in oth_value.items():
-                                child3 = QTreeWidgetItem([oth_key2,oth_val2])
-                                child2.addChild(child3)
+                        elif value in ('共同擔保地／建號'):
+                            child1 = QTreeWidgetItem([value])
+                            item.addChild(child1)
+                            for oth_key, oth_value in values[value].items():
+                                # 遍歷 '其他登記事項' 下的子字典，創建第二層子節點
+                                child2 = QTreeWidgetItem([oth_key])
+                                child1.addChild(child2)
+                                for oth_key2, oth_val2 in oth_value.items():
+                                    child3 = QTreeWidgetItem([oth_key2,oth_val2])
+                                    child2.addChild(child3)
 
-                        item.addChild(child1)
+                            item.addChild(child1)
+                                 
+                        elif value :
+                            ext = values[value]
+                            # 創建一個包含值和擴展的 QTreeWidgetItem
+                            child = QTreeWidgetItem([value, ext])
+                            item.addChild(child)
+                    items.append(item)  # 加入主節點到項目列表          
+                self.treeWidget.insertTopLevelItems(0, items) # 將項目列表插入到 QTreeWidget 的頂層
 
-                                   
-                    elif value :
-                        ext = values[value]
-                        # 創建一個包含值和擴展的 QTreeWidgetItem
-                        child = QTreeWidgetItem([value, ext])
-                        item.addChild(child)
-                items.append(item)  # 加入主節點到項目列表
-
-            # 將項目列表插入到 QTreeWidget 的頂層
-            self.treeWidget.insertTopLevelItems(0, items)
+            except:
+                self.label_return.setText('Insert Data Fail')
 
         else:
-            raise UnFormatedException('Data UnFormated!')
-        pass
+            self.label_return.setText(Received_Data)
+
+
 
     def Clear_Input(self):#清除輸入
         self.textEdit_UNIT.clear()
