@@ -51,8 +51,11 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         query = LandDescriptionQuery(token=token,UNIT=U,SEC=S,NO=N)
 
         Received_Data = query.run()#送回{'土地標示部':formatted_LANDREG} 
-        
+       
+            
+            
         if isinstance(Received_Data, dict):  # 檢查回傳資料是否正確
+            self.label_return.setText('查詢成功')
             items = []  # 用來存放 QTreeWidgetItem 的列表
             for key, values in Received_Data.items():
                 # 創建一個新的 QTreeWidgetItem，包含主字典的鍵
@@ -78,7 +81,8 @@ class MyWindow(QMainWindow, Ui_MainWindow):
             self.treeWidget.insertTopLevelItems(0, items)
 
         else:
-            raise UnFormatedException('Data UnFormated!')
+            self.label_return.setText(Received_Data)
+
 
     def Ask_LandOwnership(self):
         #取得GUI輸入

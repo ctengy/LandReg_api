@@ -18,7 +18,6 @@ class Get_token(object):
         if TokenUrl is None: 
             TokenUrl = self.TokenUrl
         
-        self.request_token()
 
     def request_token(self) -> str:
         try:
@@ -30,9 +29,9 @@ class Get_token(object):
 
                 return self.Token
             else:
-                raise GetTokenFialed("ID and SecretCode is EMPTY")
+                raise GetTokenFailedException("ID and SecretCode is EMPTY")
             
-        except GetTokenFialed as e:
+        except GetTokenFailedException as e:
             print('request token issue')
             return None
         

@@ -9,8 +9,11 @@ class RequestFailedException(Exception):
 class FormatFailedException(Exception):
     pass
 
-class GetTokenFialed(Exception):
+class GetTokenFailedException(Exception):
     pass
 class UnFormatedException(Exception):
+    pass
+
+class NoDataException(Exception):
     pass
 

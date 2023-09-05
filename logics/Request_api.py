@@ -1,16 +1,36 @@
 import requests
+import re
 
 # 自定義異常
-from logics.Exceptions import InvalidInputException, RequestFailedException, FormatFailedException
+from logics.Exceptions import *
 
 class QueryObject(object):#搜尋的父類別，定義了每次搜尋的流程:檢查token及參數、發送request、提取回傳資料 
 
     url = None
     def __init__(self,token= None,**kwargs) -> None:
         self.token = token
-        if all(kwargs.values()):#檢查查詢參數及token並建構requst header及body
-            self.request_body = [kwargs]
-            self.request_headers = {
+        self.params = kwargs
+
+    def check_input(self):
+
+        if not all(self.params.values()):
+            raise InvalidInputException
+        
+        if not re.match(r'^[A-Z]{2}$',self.params['UNIT']):           
+            raise InvalidInputException
+        
+        if not re.match(r'^[0-9]{4}$',self.params['SEC']):
+            raise InvalidInputException
+
+        if not re.match(r'^[0-9]{8}$',self.params['NO']):
+            raise InvalidInputException    
+
+
+
+    def send_request(self):
+            self.check_input()
+            request_body = [self.params]
+            request_headers = {
                         "Content-Type":"text/plain",
                         "User-Agent":"Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/80.0.3987.149 Safari/537.36",
                         "Accept": "*/*",
@@ -21,17 +41,6 @@ class QueryObject(object):#搜尋的父類別，定義了每次搜尋的流程:�
                         'Authorization': f'Bearer {self.token}'
 
                     } 
-
-        else:
-            raise InvalidInputException("Input parameters are not complete")
-    
-    def send_request(self,request_headers = None,request_body = None):
-
-            if request_body is None:
-                request_body = self.request_body
-
-            if request_headers is None:
-                request_headers = self.request_headers
 
             try:         
                 url = self.url
@@ -61,15 +70,18 @@ class QueryObject(object):#搜尋的父類別，定義了每次搜尋的流程:�
             raw_data = self.send_request()
             send_back_data = self.format_data(raw_data)
             return send_back_data
-
+        
         except InvalidInputException as e:
-            return str(e)
+                return f"InvalidInput"
 
         except RequestFailedException as e:
-            return str(e)
+            return f" RequestFailed"
 
         except FormatFailedException as e:
-            return f"An unexpected error occurred:,\n, {e}"
+            return f"FormatFailed"
+        
+        except NoDataException as e:
+            return '查詢無結果'
 
 class LandDescriptionQuery(QueryObject):#土地標示部搜尋的子類別，定義要求api的網址，rewrite format_data方法
     url = "https://api.land.moi.gov.tw/sandbox/api/LandDescription/1.0/QueryByLandNo"
@@ -99,34 +111,38 @@ class LandDescriptionQuery(QueryObject):#土地標示部搜尋的子類別，定
             "CATEGORY": "其他登記事項代碼",
             "CONTENT": "其他登記事項內容",
 
-        }   
-        if raw_data['QUANTITY'] != 0:
-            formatted_LANDREG = {}  # 存储格式化后的数据
-            formatted_OTHERREG = {}
-            try:
-                if raw_data and isinstance(raw_data, dict):
-                    response = raw_data.get("RESPONSE", "無回應")
-       
-                    result_dic_discripe = response[0]["LANDREG"]
+        }
+        try:
+            if raw_data['QUANTITY'] != 0:
+                formatted_LANDREG = {}  # 存储格式化后的数据
+                formatted_OTHERREG = {}
+                try:
+                    if raw_data and isinstance(raw_data, dict):
+                        response = raw_data.get("RESPONSE", "無回應")
+        
+                        result_dic_discripe = response[0]["LANDREG"]
 
-                    for result in result_dic_discripe:
-                        #當OTHERREG有值時處理OTHERREG
-                        if result =='OTHERREG' and any(result_dic_discripe['OTHERREG']) :
-                            ressult_dic = result_dic_discripe['OTHERREG'][0]#list中的dic值
-                            for otherreg in ressult_dic:
-                                formatted_OTHERREG[field_mapping.get(otherreg,otherreg)] = ressult_dic[otherreg]
-                            formatted_LANDREG['其他登記事項'] = formatted_OTHERREG
-                        else:    
-                            formatted_LANDREG[field_mapping.get(result,result)] = result_dic_discripe[result]#轉換成中文
+                        for result in result_dic_discripe:
+                            #當OTHERREG有值時處理OTHERREG
+                            if result =='OTHERREG' and any(result_dic_discripe['OTHERREG']) :
+                                ressult_dic = result_dic_discripe['OTHERREG'][0]#list中的dic值
+                                for otherreg in ressult_dic:
+                                    formatted_OTHERREG[field_mapping.get(otherreg,otherreg)] = ressult_dic[otherreg]
+                                formatted_LANDREG['其他登記事項'] = formatted_OTHERREG
+                            else:    
+                                formatted_LANDREG[field_mapping.get(result,result)] = result_dic_discripe[result]#轉換成中文
 
-                    return {'土地標示部':formatted_LANDREG}
+                        return {'土地標示部':formatted_LANDREG}
 
 
-            except TypeError as e:
-                raise FormatFailedException(f'{raw_data} ,\n,{e}')
-        else:
-            raise FormatFailedException(f'查詢無結果{raw_data}')
-
+                except TypeError as e:
+                    raise FormatFailedException(f'{raw_data} ,\n,{e}')
+            else:
+                raise NoDataException(f'查詢無結果{raw_data}')
+            
+        except KeyError as e:
+            raise NoDataException(f'查詢無結果{raw_data}')
+            
 class LandOwnershipQuery(QueryObject):#土地所有權部搜尋的子類別，定義要求api的網址
     
     
@@ -173,54 +189,57 @@ class LandOwnershipQuery(QueryObject):#土地所有權部搜尋的子類別，�
             'OTHERRIGHTS' : '相關他項權利部',
             'OTHERREG' : '其他登記事項'
         }
+        try:
+            if raw_data['QUANTITY'] != False:#fix here 因為免費測試資料這格是0，為了測試先去除
+                formatted_OWNERREG = {}  # 存储格式化后的数据
 
-        if raw_data['QUANTITY'] != False:#fix here 因為免費測試資料這格是0，為了測試先去除
-            formatted_OWNERREG = {}  # 存储格式化后的数据
+                try:
+                    if raw_data and isinstance(raw_data, dict):
+                        response = raw_data.get("RESPONSE", "無回應")
 
-            try:
-                if raw_data and isinstance(raw_data, dict):
-                    response = raw_data.get("RESPONSE", "無回應")
-
-                    result_dic_ownership = response[0]['LANDOWNERSHIP'][0]#取出回傳結果字典
-                    print(result_dic_ownership)
-                    
-                    for title, val in result_dic_ownership.items():
-                        translate_title = field_mapping.get(title,title)
-
-                        if isinstance(val,str):#資料直接是str
-                            formatted_OWNERREG[translate_title] = val
-
-                        elif title == 'OWNER':#資料直接是dic
-                             translateted_dic = {}
-                             ressult_dic = result_dic_ownership[title]
-                             
-                             for OWNER_title, OWNER_val in ressult_dic.items():
-                                 
-                                 translate_OWNER_title = field_mapping.get(OWNER_title,OWNER_title)
-                                 translateted_dic[translate_OWNER_title] = OWNER_val
-
-                                 formatted_OWNERREG[translate_title] = translateted_dic
+                        result_dic_ownership = response[0]['LANDOWNERSHIP'][0]#取出回傳結果字典
+                        print(result_dic_ownership)
                         
-                        elif title in ('LTPRICE','OTHERRIGHTS','OTHERREG') and any(result_dic_ownership[title]) :#資料內是list-dic
-                            translateted_dic = {}
-                            ressult_dic =  result_dic_ownership[title][0]
+                        for title, val in result_dic_ownership.items():
+                            translate_title = field_mapping.get(title,title)
 
-                            for OTH_title ,OTH_val in ressult_dic.items():
+                            if isinstance(val,str):#資料直接是str
+                                formatted_OWNERREG[translate_title] = val
+
+                            elif title == 'OWNER':#資料直接是dic
+                                translateted_dic = {}
+                                ressult_dic = result_dic_ownership[title]
                                 
-                                translateted_OTH_title = field_mapping.get(OTH_title,OTH_title)
-                                translateted_dic[translateted_OTH_title] = OTH_val
+                                for OWNER_title, OWNER_val in ressult_dic.items():
+                                    
+                                    translate_OWNER_title = field_mapping.get(OWNER_title,OWNER_title)
+                                    translateted_dic[translate_OWNER_title] = OWNER_val
 
-                                formatted_OWNERREG[translate_title] = translateted_dic
+                                    formatted_OWNERREG[translate_title] = translateted_dic
+                            
+                            elif title in ('LTPRICE','OTHERRIGHTS','OTHERREG') and any(result_dic_ownership[title]) :#資料內是list-dic
+                                translateted_dic = {}
+                                ressult_dic =  result_dic_ownership[title][0]
 
-                                
-                    
-                    return {'土地所有權部':formatted_OWNERREG}
+                                for OTH_title ,OTH_val in ressult_dic.items():
+                                    
+                                    translateted_OTH_title = field_mapping.get(OTH_title,OTH_title)
+                                    translateted_dic[translateted_OTH_title] = OTH_val
 
-            except TypeError as e:
-                raise FormatFailedException(f'{raw_data} ,\n,{e}')
-        else:
-            raise FormatFailedException(f'查詢無結果{raw_data}')
-        
+                                    formatted_OWNERREG[translate_title] = translateted_dic
+
+                                    
+                        
+                        return {'土地所有權部':formatted_OWNERREG}
+
+                except TypeError as e:
+                    raise FormatFailedException(f'{raw_data} ,\n,{e}')
+            else:
+                raise NoDataException(f'查詢無結果{raw_data}')
+            
+        except KeyError as e:
+            raise NoDataException(f'查詢無結果{raw_data}')
+               
 
 class LandOtherRights(QueryObject):#土地他項權利部搜尋的子類別，定義要求api的網址   
      #他項權利部查詢
@@ -292,69 +311,72 @@ class LandOtherRights(QueryObject):#土地他項權利部搜尋的子類別，�
 
 
         }
+        try:
+            if raw_data['QUANTITY'] != False:#fix here 因為免費測試資料這格是0，為了測試先去除
+                formatted_OTHRREG = {}  # 存储格式化后的数据
 
-        if raw_data['QUANTITY'] != False:#fix here 因為免費測試資料這格是0，為了測試先去除
-            formatted_OTHRREG = {}  # 存储格式化后的数据
+                try:
+                    if raw_data and isinstance(raw_data, dict):
+                        response = raw_data.get("RESPONSE", "無回應")
 
-            try:
-                if raw_data and isinstance(raw_data, dict):
-                    response = raw_data.get("RESPONSE", "無回應")
-
-                    result_dic_ownership = response[0]['OTHERRIGHTS'][0]#fix here 取出回傳結果字典 
-                    
-                    for title, val in result_dic_ownership.items():
-                        translate_title = field_mapping.get(title,title)
-
-                        if isinstance(val,str):#資料直接是str
-                            formatted_OTHRREG[translate_title] = val
-
-                        elif title in ('OWNER','OTHERRIGHTFILE') and any(result_dic_ownership[title]):#資料直接是dic
-                             translateted_dic = {}
-                             ressult_dic = result_dic_ownership[title]
-                             
-                             for title, val in ressult_dic.items():
-                                 
-                                 translate_OWNER_title = field_mapping.get(title,title)
-                                 translateted_dic[translate_OWNER_title] = val
-
-                                 formatted_OTHRREG[translate_title] = translateted_dic
+                        result_dic_ownership = response[0]['OTHERRIGHTS'][0]#fix here 取出回傳結果字典 
                         
-                        elif title in ('LANDOWNERSHIP','OTHERREG') and any(result_dic_ownership[title]) :#資料內是list-dic
-                            translateted_dic = {}
-                            ressult_dic =  result_dic_ownership[title][0]
+                        for title, val in result_dic_ownership.items():
+                            translate_title = field_mapping.get(title,title)
 
-                            for title, val in ressult_dic.items():
+                            if isinstance(val,str):#資料直接是str
+                                formatted_OTHRREG[translate_title] = val
+
+                            elif title in ('OWNER','OTHERRIGHTFILE') and any(result_dic_ownership[title]):#資料直接是dic
+                                translateted_dic = {}
+                                ressult_dic = result_dic_ownership[title]
                                 
-                                translateted_OTH_title = field_mapping.get(title,title)
-                                translateted_dic[translateted_OTH_title] = val
+                                for title, val in ressult_dic.items():
+                                    
+                                    translate_OWNER_title = field_mapping.get(title,title)
+                                    translateted_dic[translate_OWNER_title] = val
 
-                                formatted_OTHRREG[translate_title] = translateted_dic   
-                        elif title == 'JOINTGUARANTY' and any(result_dic_ownership[title]):#資料內是dic-list-dic
-                             translateted_dic = {}
-                             JOINTGUARANTY_item_dic = {}
-                             ressult_dic = result_dic_ownership[title]
-
-                             for title, val_dic in ressult_dic.items():
-                                 translate_JOINTGUARANTY_title = field_mapping.get(title,title)
-                                 if ressult_dic[title]:
-                                    val_dic = ressult_dic[title][0]
-                                    for val_title, val_val in val_dic.items():
-                                        translate_val_title = field_mapping.get(val_title,val_title)
-                                        JOINTGUARANTY_item_dic[translate_val_title] = val_val
-                                        translateted_dic[translate_JOINTGUARANTY_title] = JOINTGUARANTY_item_dic
-
-                                 formatted_OTHRREG[translate_title] = translateted_dic 
+                                    formatted_OTHRREG[translate_title] = translateted_dic
                             
-                                            
+                            elif title in ('LANDOWNERSHIP','OTHERREG') and any(result_dic_ownership[title]) :#資料內是list-dic
+                                translateted_dic = {}
+                                ressult_dic =  result_dic_ownership[title][0]
 
-                   
-                    return {'土地他項權利部':formatted_OTHRREG}
+                                for title, val in ressult_dic.items():
+                                    
+                                    translateted_OTH_title = field_mapping.get(title,title)
+                                    translateted_dic[translateted_OTH_title] = val
 
-            except TypeError as e:
-                raise FormatFailedException(f'{raw_data} ,\n,{e}')
-        else:
-            raise FormatFailedException(f'查詢無結果{raw_data}')
-        
+                                    formatted_OTHRREG[translate_title] = translateted_dic   
+                            elif title == 'JOINTGUARANTY' and any(result_dic_ownership[title]):#資料內是dic-list-dic
+                                translateted_dic = {}
+                                JOINTGUARANTY_item_dic = {}
+                                ressult_dic = result_dic_ownership[title]
+
+                                for title, val_dic in ressult_dic.items():
+                                    translate_JOINTGUARANTY_title = field_mapping.get(title,title)
+                                    if ressult_dic[title]:
+                                        val_dic = ressult_dic[title][0]
+                                        for val_title, val_val in val_dic.items():
+                                            translate_val_title = field_mapping.get(val_title,val_title)
+                                            JOINTGUARANTY_item_dic[translate_val_title] = val_val
+                                            translateted_dic[translate_JOINTGUARANTY_title] = JOINTGUARANTY_item_dic
+
+                                    formatted_OTHRREG[translate_title] = translateted_dic 
+                                
+                                                
+
+                    
+                        return {'土地他項權利部':formatted_OTHRREG}
+
+                except TypeError as e:
+                    raise FormatFailedException(f'{raw_data} ,\n,{e}')
+            else:
+                raise NoDataException(f'查詢無結果{raw_data}')
+            
+        except KeyError as e:
+            raise NoDataException(f'查詢無結果{raw_data}')
+                        
 
 
         
