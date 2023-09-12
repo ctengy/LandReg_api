@@ -4,7 +4,7 @@ sys.path.append(r'.')#將上級目錄加入path
 import requests
 from logics.Exceptions import *
 
-class Get_token(object):
+class GetToken(object):
 
     TokenUrl = "https://api.land.moi.gov.tw/cp/getToken"
     Token = ""
@@ -24,6 +24,7 @@ class Get_token(object):
             if all((self.ClientID,self.SecretCode)):
                 response = requests.get(self.TokenUrl, auth=(f'{self.ClientID}', f'{self.SecretCode}'))
                 print(response.status_code)
+                
                 res_obj = response.json()
                 self.Token = res_obj['access_token']
 

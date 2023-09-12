@@ -46,7 +46,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         N = self.textEdit_NO.toPlainText()#地號
         ID = ''#傳入地政平台帳號
         SecretCode = ''#傳入地政平台密碼
-        auth = Get_token(ID,SecretCode)#建立驗證物件
+        auth = GetToken(ID,SecretCode)#建立驗證物件
         token = auth.request_token()#取得Token
         query = LandDescriptionQuery(token=token,UNIT=U,SEC=S,NO=N)
 
@@ -78,7 +78,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
 
                 # 將項目列表插入到 QTreeWidget 的頂層
                 self.treeWidget.insertTopLevelItems(0, items)
-            except:
+            except :
                 self.label_return.setText('Insert Data Fail')
 
         else:
@@ -92,7 +92,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         N = self.textEdit_NO.toPlainText()#地號
         ID = ''#傳入地政平台帳號
         SecretCode = ''#傳入地政平台密碼
-        auth = Get_token(ID,SecretCode)#建立驗證物件
+        auth = GetToken(ID,SecretCode)#建立驗證物件
         token = auth.request_token()#取得Token
         query = LandOwnershipQuery(token=token,UNIT=U,SEC=S,NO=N, RNO= '0002')#fix here 測試的RNO
 
@@ -138,7 +138,7 @@ class MyWindow(QMainWindow, Ui_MainWindow):
         N = self.textEdit_NO.toPlainText()#地號
         ID = ''#傳入地政平台帳號
         SecretCode = ''#傳入地政平台密碼
-        auth = Get_token(ID,SecretCode)#建立驗證物件
+        auth = GetToken(ID,SecretCode)#建立驗證物件
         token = auth.request_token()#取得Token
 
         query = LandOtherRights(token=token,UNIT=U,SEC=S,NO=N,RNO='')#fix here 測試的RNO
